@@ -181,7 +181,7 @@ class M6WebStatsdExtension extends Extension
         if ($baseEvents) {
             $definition->addTag('kernel.event_listener', [
                 'event' => 'kernel.terminate',
-                'method' => 'onKernelTerminateEvents',
+                'method' => 'dispatchBaseEvents',
                 'priority' => 0
             ]);
             $definition->addTag('kernel.event_listener', [

@@ -3,6 +3,7 @@
 namespace M6Web\Bundle\StatsdBundle\Client;
 
 use M6Web\Component\Statsd\Client as BaseClient;
+use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\PropertyAccess;
 
 /**
@@ -89,26 +90,30 @@ class Client extends BaseClient
 
         $config        = $this->listenedEvents[$name];
         $immediateSend = false;
+        $tags          = $this->mergeTags($event, $config['tags']);
 
         foreach ($config as $conf => $confValue) {
+
             // increment
             if ('increment' === $conf) {
-                $this->increment($this->replaceInNodeFormMethod($event, $name, $confValue));
+                $this->increment($this->replaceInNodeFormMethod($event, $name, $confValue), 1, $tags);
             } elseif ('count' === $conf) {
                 $value = $this->getEventValue($event, 'getValue');
-                $this->count($this->replaceInNodeFormMethod($event, $name, $confValue), $value);
+                $this->count($this->replaceInNodeFormMethod($event, $name, $confValue), $value, 1, $tags);
             } elseif ('gauge' === $conf) {
                 $value = $this->getEventValue($event, 'getValue');
-                $this->gauge($this->replaceInNodeFormMethod($event, $name, $confValue), $value);
+                $this->gauge($this->replaceInNodeFormMethod($event, $name, $confValue), $value, 1, $tags);
             } elseif ('set' === $conf) {
                 $value = $this->getEventValue($event, 'getValue');
-                $this->set($this->replaceInNodeFormMethod($event, $name, $confValue), $value);
+                $this->set($this->replaceInNodeFormMethod($event, $name, $confValue), $value, 1, $tags);
             } elseif ('timing' === $conf) {
-                $this->addTiming($event, 'getTiming', $this->replaceInNodeFormMethod($event, $name, $confValue));
+                $this->addTiming($event, 'getTiming', $this->replaceInNodeFormMethod($event, $name, $confValue), $tags);
             } elseif (('custom_timing' === $conf) and is_array($confValue)) {
-                $this->addTiming($event, $confValue['method'], $this->replaceInNodeFormMethod($event, $name, $confValue['node']));
+                $this->addTiming($event, $confValue['method'], $this->replaceInNodeFormMethod($event, $name, $confValue['node']), $tags);
             } elseif ('immediate_send' === $conf) {
                 $immediateSend = $confValue;
+            } elseif ('tags' === $conf) {
+                // nothing
             } else {
                 throw new Exception("configuration : ".$conf." not handled by the StatsdBundle or its value is in a wrong format.");
             }
@@ -151,11 +156,11 @@ class Client extends BaseClient
      *
      * @return void
      */
-    private function addTiming($event, $timingMethod, $node)
+    private function addTiming($event, $timingMethod, $node, $tags = [])
     {
         $timing = $this->getEventValue($event, $timingMethod);
         if ($timing > 0) {
-            $this->timing($node, $timing);
+            $this->timing($node, $timing, 1, $tags);
         }
     }
 
@@ -182,5 +187,21 @@ class Client extends BaseClient
         }
 
         return $node;
+    }
+
+    /**
+     * Merge config tags with tags manually sent with the event
+     *
+     * @param GenericEvent $event
+     * @param array $configTags
+     * @return array of tags
+     */
+    private function mergeTags($event, $configTags)
+    {
+        if ($event instanceof GenericEvent) {
+            return array_merge($configTags, $event->hasArgument('tags') ? $event->getArgument('tags') : []);
+        }
+
+        return $configTags;
     }
 }
