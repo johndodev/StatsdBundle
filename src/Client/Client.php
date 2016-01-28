@@ -2,6 +2,7 @@
 
 namespace M6Web\Bundle\StatsdBundle\Client;
 
+use M6Web\Bundle\StatsdBundle\Statsd\MonitorableEventInterface;
 use M6Web\Component\Statsd\Client as BaseClient;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\PropertyAccess;
@@ -192,14 +193,14 @@ class Client extends BaseClient
     /**
      * Merge config tags with tags manually sent with the event
      *
-     * @param GenericEvent $event
+     * @param mixed $event
      * @param array $configTags
      * @return array of tags
      */
     private function mergeTags($event, $configTags)
     {
-        if ($event instanceof GenericEvent) {
-            return array_merge($configTags, $event->hasArgument('tags') ? $event->getArgument('tags') : []);
+        if ($event instanceof MonitorableEventInterface) {
+            return array_merge($configTags, $event->getTags());
         }
 
         return $configTags;
