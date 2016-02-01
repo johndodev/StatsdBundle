@@ -91,7 +91,7 @@ class Client extends BaseClient
 
         $config        = $this->listenedEvents[$name];
         $immediateSend = false;
-        $tags          = $this->mergeTags($event, $config['tags']);
+        $tags          = $this->mergeTags($event, $config);
 
         foreach ($config as $conf => $confValue) {
 
@@ -194,11 +194,13 @@ class Client extends BaseClient
      * Merge config tags with tags manually sent with the event
      *
      * @param mixed $event
-     * @param array $configTags
+     * @param array $config
      * @return array of tags
      */
-    private function mergeTags($event, $configTags)
+    private function mergeTags($event, $config)
     {
+        $configTags = isset($config['tags']) ? $config['tags'] : [];
+
         if ($event instanceof MonitorableEventInterface) {
             return array_merge($configTags, $event->getTags());
         }
