@@ -151,11 +151,12 @@ class Client extends BaseClient
      * Factorisation of the timing method
      * find the value timed
      *
-     * @param object $event        Event
+     * @param object $event Event
      * @param string $timingMethod Callable method in the event
-     * @param string $node         Node
+     * @param string $node Node
+     * @param array $tags Tags key => value for influxDb
      *
-     * @return void
+     * @throws Exception
      */
     private function addTiming($event, $timingMethod, $node, $tags = [])
     {
@@ -195,6 +196,7 @@ class Client extends BaseClient
      *
      * @param mixed $event
      * @param array $config
+     * 
      * @return array of tags
      */
     private function mergeTags($event, $config)
