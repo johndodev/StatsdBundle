@@ -44,6 +44,9 @@ class ConsoleListener
         $this->eventDispatcher = $ev;
     }
 
+    /**
+     * @param Client $client
+     */
     public function addStatsdClient(Client $client)
     {
         $this->clients[] = $client;

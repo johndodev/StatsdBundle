@@ -77,6 +77,7 @@ class Client extends BaseClient
      * @param string         $name  the event name
      *
      * @throws Exception
+     * @return void
      */
     public function handleEvent($event, $name = null)
     {
