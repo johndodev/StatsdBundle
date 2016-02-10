@@ -58,7 +58,7 @@ class Client extends BaseClient
     }
 
     /**
-     * set the property accessor used in replaceInNodeFormMethod
+     * set the property accessor used in replaceConfigPlaceholder
      * @param PropertyAccess\PropertyAccessorInterface $propertyAccessor
      *
      * @return $this
@@ -93,24 +93,29 @@ class Client extends BaseClient
         $immediateSend = false;
         $tags          = $this->mergeTags($event, $config);
 
+        // replace placeholders in tags
+        $tags = array_map(function($tag) use ($event, $name) {
+            return $this->replaceConfigPlaceholder($event, $name, $tag);
+        }, $tags);
+
         foreach ($config as $conf => $confValue) {
 
             // increment
             if ('increment' === $conf) {
-                $this->increment($this->replaceInNodeFormMethod($event, $name, $confValue), 1, $tags);
+                $this->increment($this->replaceConfigPlaceholder($event, $name, $confValue), 1, $tags);
             } elseif ('count' === $conf) {
                 $value = $this->getEventValue($event, 'getValue');
-                $this->count($this->replaceInNodeFormMethod($event, $name, $confValue), $value, 1, $tags);
+                $this->count($this->replaceConfigPlaceholder($event, $name, $confValue), $value, 1, $tags);
             } elseif ('gauge' === $conf) {
                 $value = $this->getEventValue($event, 'getValue');
-                $this->gauge($this->replaceInNodeFormMethod($event, $name, $confValue), $value, 1, $tags);
+                $this->gauge($this->replaceConfigPlaceholder($event, $name, $confValue), $value, 1, $tags);
             } elseif ('set' === $conf) {
                 $value = $this->getEventValue($event, 'getValue');
-                $this->set($this->replaceInNodeFormMethod($event, $name, $confValue), $value, 1, $tags);
+                $this->set($this->replaceConfigPlaceholder($event, $name, $confValue), $value, 1, $tags);
             } elseif ('timing' === $conf) {
-                $this->addTiming($event, 'getTiming', $this->replaceInNodeFormMethod($event, $name, $confValue), $tags);
+                $this->addTiming($event, 'getTiming', $this->replaceConfigPlaceholder($event, $name, $confValue), $tags);
             } elseif (('custom_timing' === $conf) and is_array($confValue)) {
-                $this->addTiming($event, $confValue['method'], $this->replaceInNodeFormMethod($event, $name, $confValue['node']), $tags);
+                $this->addTiming($event, $confValue['method'], $this->replaceConfigPlaceholder($event, $name, $confValue['node']), $tags);
             } elseif ('immediate_send' === $conf) {
                 $immediateSend = $confValue;
             } elseif ('tags' === $conf) {
@@ -171,24 +176,24 @@ class Client extends BaseClient
      *
      * @param EventInterface $event An event
      * @param string         $eventName The name of the event
-     * @param string         $node  The node in which the replacing will happen
+     * @param string         $string  The node in which the replacing will happen
      *
      * @return string
      */
-    private function replaceInNodeFormMethod($event, $eventName, $node)
+    private function replaceConfigPlaceholder($event, $eventName, $string)
     {
         // `event->getName()` is deprecated, we have to replace <name> directly with $eventName
-        $node = str_replace('<name>', $eventName, $node);
+        $string = str_replace('<name>', $eventName, $string);
 
-        if ((preg_match_all('/<([^>]*)>/', $node, $matches) > 0) and ($this->propertyAccessor !== null)) {
+        if ((preg_match_all('/<([^>]*)>/', $string, $matches) > 0) and ($this->propertyAccessor !== null)) {
             $tokens = $matches[1];
             foreach ($tokens as $token) {
                 $value = $this->propertyAccessor->getValue($event, $token);
-                $node = str_replace('<'.$token.'>', $value, $node);
+                $string = str_replace('<'.$token.'>', $value, $string);
             }
         }
 
-        return $node;
+        return $string;
     }
 
     /**
