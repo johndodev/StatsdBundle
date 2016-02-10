@@ -68,6 +68,7 @@ class M6WebStatsdExtension extends Extension
             $container->setDefinition('m6.data_collector.statsd', $definition);
         }
 
+        // Listner of console events
         if ($config['console_events']) {
             $container
                 ->register(
@@ -86,7 +87,15 @@ class M6WebStatsdExtension extends Extension
                     'kernel.event_listener',
                     ['event' => 'console.terminate', 'method' => 'onTerminate']
                 )
+                ->addTag(
+                    'kernel.event_listener',
+                    ['event' => 'console.terminate', 'method' => 'sendMetrics', 'priority' => '-255']
+                )
                 ->addMethodCall('setEventDispatcher', [new Reference('event_dispatcher')]);
+
+            foreach ($clientServiceNames as $clientServiceName) {
+                $container->getDefinition('m6.listener.statsd.console')->addMethodCall('addStatsdClient', [new Reference($clientServiceName)]);
+            }
         }
     }
 

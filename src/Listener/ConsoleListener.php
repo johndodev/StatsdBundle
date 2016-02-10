@@ -2,6 +2,7 @@
 
 namespace M6Web\Bundle\StatsdBundle\Listener;
 
+use M6Web\Bundle\StatsdBundle\Client\Client;
 use M6Web\Bundle\StatsdBundle\Event\ConsoleEvent;
 
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -27,6 +28,13 @@ class ConsoleListener
     protected $startTime = null;
 
     /**
+     * Statsd clients
+     *
+     * @var Client[]
+     */
+    protected $clients = [];
+
+    /**
      * Define event dispatch
      *
      * @param EventDispatcherInterface $ev
@@ -34,6 +42,11 @@ class ConsoleListener
     public function setEventDispatcher(EventDispatcherInterface $ev)
     {
         $this->eventDispatcher = $ev;
+    }
+
+    public function addStatsdClient(Client $client)
+    {
+        $this->clients[] = $client;
     }
 
     /**
@@ -57,6 +70,16 @@ class ConsoleListener
         }
 
         $this->dispatch(ConsoleEvent::TERMINATE, $e);
+    }
+
+    /**
+     * The very last dispatched events (onTerminate)
+     */
+    public function sendMetrics()
+    {
+        foreach ($this->clients as $client) {
+            $client->send();
+        }
     }
 
     /**
